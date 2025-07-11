@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import List, Dict
@@ -81,6 +82,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint to verify the API is running."""
+    return {
+        "status": "healthy",
+        "redis": "connected" if store and store.redis.ping() else "disconnected",
+        "message": "StyleMail API is running"
+    }
 
 
 class SeedRequest(BaseModel):

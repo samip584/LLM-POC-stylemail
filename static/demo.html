@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StyleMail - Email Style AI</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 2em;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 40px;
+        font-size: 1.1em;
+      }
+
+      .section {
+        margin-bottom: 40px;
+        padding-bottom: 40px;
+        border-bottom: 2px solid #eee;
+      }
+
+      .section:last-child {
+        border-bottom: none;
+      }
+
+      h2 {
+        color: #555;
+        margin-bottom: 20px;
+        font-size: 1.4em;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555;
+        font-weight: 500;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 15px;
+        font-family: inherit;
+        margin-bottom: 20px;
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      button:hover {
+        background: #5568d3;
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .result {
+        background: #f9f9f9;
+        border-left: 4px solid #667eea;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 6px;
+        display: none;
+      }
+
+      .result.show {
+        display: block;
+      }
+
+      .result h3 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .result pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #555;
+        font-size: 14px;
+      }
+
+      .message {
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin-top: 15px;
+        display: none;
+      }
+
+      .message.show {
+        display: block;
+      }
+
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .loading {
+        color: #667eea;
+        text-align: center;
+        display: none;
+      }
+
+      .loading.show {
+        display: block;
+      }
+
+      .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin-bottom: 30px;
+        border-radius: 6px;
+      }
+
+      .info-box p {
+        color: #555;
+        margin: 5px 0;
+      }
+
+      .quick-select {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+
+      .quick-btn {
+        background: #f0f0f0;
+        border: 2px solid #ddd;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #555;
+      }
+
+      .quick-btn:hover {
+        background: #e0e0e0;
+        border-color: #667eea;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📧 StyleMail</h1>
+      <p class="subtitle">AI that learns and mimics your writing style</p>
+
+      <!-- Generate Email Section -->
+      <div class="section">
+        <h2>Generate an Email</h2>
+
+        <label for="gen-user-id">Persona ID:</label>
+        <input
+          type="text"
+          id="gen-user-id"
+          placeholder="e.g., pirate_pete"
+          value="pirate_pete"
+        />
+
+        <label for="subject">Email subject:</label>
+        <input
+          type="text"
+          id="subject"
+          placeholder="e.g., Project Update"
+          value="Project Update"
+        />
+
+        <label for="prompt">What should the email say?</label>
+        <textarea
+          id="prompt"
+          rows="4"
+          placeholder="Describe what the email should be about..."
+        >
+Let the team know that the project deadline has been extended by one week.</textarea
+        >
+
+        <button onclick="generateEmail()">Generate Email</button>
+
+        <div class="loading" id="gen-loading">Generating email...</div>
+        <div class="result" id="gen-result">
+          <h3>Generated Email:</h3>
+          <pre id="gen-output"></pre>
+        </div>
+        <div class="message error" id="gen-error"></div>
+      </div>
+
+      <!-- Seed Data Section -->
+      <div class="section">
+        <h2>Seed Writing Styles</h2>
+        <p style="color: #666; margin-bottom: 20px">
+          Add personas by pasting JSON data with user_id and samples
+        </p>
+
+        <label for="bulk-json"
+          >Paste JSON (format: array of {user_id, samples}):</label
+        >
+        <textarea
+          id="bulk-json"
+          rows="12"
+          placeholder='[
+  {
+    "user_id": "my_style",
+    "samples": [
+      "Sample message 1",
+      "Sample message 2",
+      "Sample message 3"
+    ]
+  }
+]'
+        ></textarea>
+
+        <button onclick="loadBulkData()">Load Personas from JSON</button>
+        <button
+          onclick="loadDemoData()"
+          style="margin-top: 10px; background: #2ed573"
+        >
+          Load Demo Personas (Pirate, Valley Girl, etc.)
+        </button>
+
+        <div class="message success" id="bulk-success"></div>
+        <div class="message error" id="bulk-error"></div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = window.location.origin;
+
+      const PERSONAS = {
+        professional_emily: `Thank you for your email. I appreciate you bringing this to my attention.
+I wanted to follow up on our discussion regarding the Q4 objectives.
+Per our conversation, I am attaching the requested documents for your review.`,
+        casual_mike: `Hey! Thanks for reaching out. I'll get back to you soon 😊
+No worries at all! Happy to help with this.
+Awesome work on the presentation! Really impressed.`,
+        pirate_pete: `Ahoy matey! Aye, I've received yer message and will be chartin' a course to address this!
+Arrr! That be a fine idea indeed! Let's hoist the sails and set forth on this venture, savvy?
+Avast! I be thankin' ye for yer hard work on this project, ye scurvy dog!`,
+        valley_girl_vanessa: `OMG, like, this is literally the best proposal I've ever seen! Like, seriously! 💅
+So, like, I was literally just thinking about this and we should totally meet up?
+This is, like, literally so important right now. Like, we need to prioritize this ASAP!`,
+        corporate_buzzword_betty: `Let's circle back and touch base to synergize our strategic initiatives moving forward.
+At the end of the day, we need to think outside the box and shift the paradigm.
+I'd like to ping you offline to deep-dive into this low-hanging fruit opportunity.`,
+        repetitive_rachel: `Thanks, thanks, thanks for the update! Really appreciate it, really do!
+Great work, great work on this project! The team did great, really great!
+Perfect, perfect! This looks perfect. Absolutely perfect work.`,
+      };
+
+      const DEMO_DATA = [
+        {
+          user_id: "professional_emily",
+          samples: [
+            "Thank you for your email. I appreciate you bringing this to my attention and will review the details thoroughly.",
+            "I wanted to follow up on our discussion regarding the Q4 objectives. Please let me know if you have any questions.",
+            "Per our conversation, I am attaching the requested documents for your review. Let me know if you need anything else.",
+          ],
+        },
+        {
+          user_id: "casual_mike",
+          samples: [
+            "Hey! Thanks for reaching out. I'll get back to you soon 😊",
+            "No worries at all! Happy to help with this. Let me know if you need anything else!",
+            "Awesome work on the presentation! Really impressed with what you put together.",
+          ],
+        },
+        {
+          user_id: "pirate_pete",
+          samples: [
+            "Ahoy matey! Aye, I've received yer message and will be chartin' a course to address this matter post-haste!",
+            "Arrr! That be a fine idea indeed! Let's hoist the sails and set forth on this venture, savvy?",
+            "Avast! I be thankin' ye for yer hard work on this project, ye scurvy dog!",
+          ],
+        },
+        {
+          user_id: "valley_girl_vanessa",
+          samples: [
+            "OMG, like, this is literally the best proposal I've ever seen! Like, seriously, you totally crushed it! 💅",
+            "So, like, I was literally just thinking about this and, like, we should totally meet up and discuss it? Like, for real!",
+            "This is, like, literally so important right now. Like, we need to, like, prioritize this ASAP!",
+          ],
+        },
+        {
+          user_id: "corporate_buzzword_betty",
+          samples: [
+            "Let's circle back and touch base to synergize our strategic initiatives moving forward.",
+            "At the end of the day, we need to think outside the box and shift the paradigm.",
+            "I'd like to ping you offline to deep-dive into this low-hanging fruit opportunity.",
+          ],
+        },
+        {
+          user_id: "repetitive_rachel",
+          samples: [
+            "Thanks, thanks, thanks for the update! Really appreciate it, really do!",
+            "Great work, great work on this project! The team did great, really great!",
+            "Perfect, perfect! This looks perfect. Absolutely perfect work.",
+          ],
+        },
+      ];
+
+      function selectPersona(personaId) {
+        document.getElementById("user-id").value = personaId;
+        document.getElementById("gen-user-id").value = personaId;
+        document.getElementById("samples").value = PERSONAS[personaId] || "";
+      }
+
+      async function loadDemoData() {
+        await loadBulkFromData(DEMO_DATA);
+      }
+
+      async function loadBulkData() {
+        const jsonText = document.getElementById("bulk-json").value.trim();
+
+        if (!jsonText) {
+          showMessage("bulk-error", "Please paste JSON data");
+          return;
+        }
+
+        try {
+          const data = JSON.parse(jsonText);
+          await loadBulkFromData(data);
+        } catch (error) {
+          showMessage("bulk-error", `Invalid JSON: ${error.message}`);
+        }
+      }
+
+      async function loadBulkFromData(data) {
+        if (!Array.isArray(data)) {
+          showMessage("bulk-error", "JSON must be an array of personas");
+          return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const persona of data) {
+          if (
+            !persona.user_id ||
+            !persona.samples ||
+            !Array.isArray(persona.samples)
+          ) {
+            failCount++;
+            continue;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE}/seed`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: persona.user_id,
+                samples: persona.samples,
+              }),
+            });
+
+            if (response.ok) {
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } catch (error) {
+            failCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          showMessage(
+            "bulk-success",
+            `✅ Loaded ${successCount} persona(s)! ${
+              failCount > 0 ? `(${failCount} failed)` : ""
+            }`
+          );
+          hideMessage("bulk-error");
+        } else {
+          showMessage(
+            "bulk-error",
+            `Failed to load personas. Check your JSON format.`
+          );
+        }
+      }
+
+      async function teachStyle() {
+        const userId = document.getElementById("user-id").value.trim();
+        const samplesText = document.getElementById("samples").value.trim();
+
+        if (!userId || !samplesText) {
+          showMessage(
+            "teach-error",
+            "Please enter a user ID and writing samples"
+          );
+          return;
+        }
+
+        const samples = samplesText
+          .split("\n")
+          .filter((s) => s.trim().length > 0);
+
+        if (samples.length < 2) {
+          showMessage(
+            "teach-error",
+            "Please provide at least 2 writing samples"
+          );
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/seed`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, samples }),
+          });
+
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+
+          showMessage(
+            "teach-success",
+            `✅ Successfully taught AI the "${userId}" style!`
+          );
+          hideMessage("teach-error");
+          document.getElementById("gen-user-id").value = userId;
+        } catch (error) {
+          showMessage("teach-error", `Error: ${error.message}`);
+        }
+      }
+
+      async function generateEmail() {
+        const userId = document.getElementById("gen-user-id").value.trim();
+        const subject = document.getElementById("subject").value.trim();
+        const prompt = document.getElementById("prompt").value.trim();
+
+        if (!userId || !subject || !prompt) {
+          showMessage("gen-error", "Please fill in all fields");
+          return;
+        }
+
+        showLoading("gen-loading");
+        hideResult("gen-result");
+        hideMessage("gen-error");
+
+        try {
+          const response = await fetch(`${API_BASE}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, subject, prompt }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.detail || `HTTP error! status: ${response.status}`
+            );
+          }
+
+          const data = await response.json();
+          document.getElementById(
+            "gen-output"
+          ).textContent = `Subject: ${data.subject}\n\n${data.body}`;
+          showResult("gen-result");
+          hideLoading("gen-loading");
+        } catch (error) {
+          hideLoading("gen-loading");
+          showMessage("gen-error", `Error: ${error.message}`);
+        }
+      }
+
+      function showMessage(id, text) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.classList.add("show");
+        setTimeout(() => el.classList.remove("show"), 5000);
+      }
+
+      function hideMessage(id) {
+        document.getElementById(id).classList.remove("show");
+      }
+
+      function showLoading(id) {
+        document.getElementById(id).classList.add("show");
+      }
+
+      function hideLoading(id) {
+        document.getElementById(id).classList.remove("show");
+      }
+
+      function showResult(id) {
+        document.getElementById(id).classList.add("show");
+      }
+
+      function hideResult(id) {
+        document.getElementById(id).classList.remove("show");
+      }
+    </script>
+  </body>
+</html>
