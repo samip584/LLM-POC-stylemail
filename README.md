@@ -7,8 +7,9 @@ A powerful Proof of Concept for generating personalized, style-aware emails usin
 - **Style Learning**: Analyzes writing samples to learn user-specific writing styles
 - **RAG-Powered Generation**: Uses embeddings to retrieve relevant style examples
 - **Multi-User Support**: Redis-backed storage for multiple user profiles
-- **Nudge Integration**: Connects with Laudio API for employee nudge management
-- **Docker Ready**: Complete containerization with Redis included
+- **Nudge Management**: PostgreSQL-backed employee nudge tracking and analytics
+- **Smart Caching**: Automatic summary caching to avoid redundant API calls
+- **Docker Ready**: Complete containerization with Redis and PostgreSQL included
 - **Multiple Interfaces**: FastAPI server, CLI, Python module, and web UI
 
 ## 🚀 Quick Start (Docker)
@@ -125,12 +126,14 @@ curl -X POST "http://localhost:8000/nudge-summary" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "manager_123",
-    "prompt": "Summarize employee performance nudges",
-    "email": "your-email@example.com",
-    "password": "your-password",
-    "employee_id": "emp_456"
+    "prompt": "Create a professional summary",
+    "email": "not-used@example.com",
+    "password": "not-used",
+    "employee_id": "emp_001"
   }'
 ```
+
+**Note**: The nudge endpoints now query from PostgreSQL. The `email` and `password` fields are kept for backward compatibility but are not used.
 
 ### Python Module
 
@@ -176,13 +179,37 @@ python -m stylemail.cli generate user123 "Follow up on the proposal"
 
 ## 🎯 Demo Data
 
-To quickly populate the system with demo data:
+### Seed Writing Styles
+
+To quickly populate the system with demo writing styles:
 
 ```bash
 python demo_seed.py
 ```
 
-This will create several sample users with different writing styles.
+This creates sample users with distinctive writing styles (pirate, Shakespearean, Yoda, etc.).
+
+### Seed Nudge Data
+
+To populate the system with employee performance nudge data:
+
+```bash
+# Using Docker
+docker compose exec app python seed_nudges.py
+
+# Or locally
+python seed_nudges.py
+```
+
+This creates:
+- **3 sample employees** (Sarah Johnson, Michael Chen, Emily Rodriguez)
+- **6 nudges** covering performance, attendance, peer review, collaboration, and training
+- **12 attendance records** with late/early arrival data
+
+Sample employee IDs for testing:
+- `emp_001`: Sarah Johnson (performance + attendance nudges)
+- `emp_002`: Michael Chen (peer review + collaboration nudges)  
+- `emp_003`: Emily Rodriguez (training nudge)
 
 ## 🏗️ Architecture
 
@@ -192,38 +219,44 @@ This will create several sample users with different writing styles.
 │  (Web/CLI)  │◀─────│   Server     │◀─────│     API     │
 └─────────────┘      └──────────────┘      └─────────────┘
                             │
-                            ▼
-                     ┌──────────────┐
-                     │    Redis     │
-                     │ (Embeddings) │
-                     └──────────────┘
+                     ┌──────┴──────┐
+                     ▼              ▼
+              ┌──────────┐   ┌──────────────┐
+              │  Redis   │   │  PostgreSQL  │
+              │(Vectors) │   │(Nudge Data)  │
+              └──────────┘   └──────────────┘
 ```
 
 **Key Components:**
 
 - **FastAPI Server**: REST API for all operations
 - **Redis**: Vector storage for user writing style embeddings
+- **PostgreSQL**: Relational database for employees, nudges, summaries, and emails
 - **OpenAI API**: Embedding generation and text completion
-- **SQLite**: Nudge summary caching
 - **Docker**: Complete containerization with hot reload
 
 ## 🛠️ Technology Stack
 
 - **Backend**: Python 3.11, FastAPI, Uvicorn
 - **AI/ML**: OpenAI GPT-4o, text-embedding-ada-002
-- **Storage**: Redis (vector store), SQLite (caching)
+- **Storage**: 
+  - Redis (vector embeddings)
+  - PostgreSQL (employees, nudges, summaries)
+  - SQLite (legacy caching)
+- **ORM**: SQLAlchemy 2.0
 - **Frontend**: Vanilla HTML/CSS/JavaScript
 - **DevOps**: Docker, Docker Compose
 
 ## 📝 Environment Variables
 
-| Variable         | Description               | Default                        |
-| ---------------- | ------------------------- | ------------------------------ |
-| `OPENAI_API_KEY` | OpenAI API key (required) | -                              |
-| `REDIS_HOST`     | Redis server host         | `redis` (Docker) / `localhost` |
-| `REDIS_PORT`     | Redis server port         | `6379`                         |
-| `REDIS_DB`       | Redis database number     | `0`                            |
-| `REDIS_PASSWORD` | Redis password (optional) | -                              |
+| Variable         | Description                      | Default                                               |
+| ---------------- | -------------------------------- | ----------------------------------------------------- |
+| `OPENAI_API_KEY` | OpenAI API key (required)        | -                                                     |
+| `REDIS_HOST`     | Redis server host                | `redis` (Docker) / `localhost`                        |
+| `REDIS_PORT`     | Redis server port                | `6379`                                                |
+| `REDIS_DB`       | Redis database number            | `0`                                                   |
+| `REDIS_PASSWORD` | Redis password (optional)        | -                                                     |
+| `DATABASE_URL`   | PostgreSQL connection string     | `postgresql://stylemail:stylemail123@postgres:5432/stylemail_db` |
 
 ## 🧪 Testing
 

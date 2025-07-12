@@ -246,6 +246,65 @@ Let the team know that the project deadline has been extended by one week.</text
         <div class="message error" id="gen-error"></div>
       </div>
 
+      <!-- Nudge Management Section -->
+      <div class="section">
+        <h2>Employee Nudge Management</h2>
+        <p style="color: #666; margin-bottom: 20px">
+          View and generate summaries/emails for employee performance nudges
+        </p>
+
+        <label for="employee-id">Employee ID:</label>
+        <input
+          type="text"
+          id="employee-id"
+          placeholder="e.g., emp_001"
+          value="emp_001"
+        />
+
+        <div class="quick-select">
+          <button class="quick-btn" onclick="selectEmployee('emp_001')">
+            Sarah Johnson (Performance + Attendance)
+          </button>
+          <button class="quick-btn" onclick="selectEmployee('emp_002')">
+            Michael Chen (Peer Review + Collaboration)
+          </button>
+          <button class="quick-btn" onclick="selectEmployee('emp_003')">
+            Emily Rodriguez (Training)
+          </button>
+        </div>
+
+        <button onclick="fetchNudges()" style="background: #764ba2">
+          View Nudges
+        </button>
+        <button
+          onclick="generateNudgeSummary()"
+          style="background: #f093fb; margin-top: 10px"
+        >
+          Generate Summary
+        </button>
+        <button
+          onclick="generateNudgeEmail()"
+          style="background: #4facfe; margin-top: 10px"
+        >
+          Generate Email
+        </button>
+
+        <div class="loading" id="nudge-loading">Loading...</div>
+        <div class="result" id="nudge-result">
+          <h3>Nudges:</h3>
+          <pre id="nudge-output"></pre>
+        </div>
+        <div class="result" id="summary-result">
+          <h3>Summary:</h3>
+          <pre id="summary-output"></pre>
+        </div>
+        <div class="result" id="email-result">
+          <h3>Generated Email:</h3>
+          <pre id="email-output"></pre>
+        </div>
+        <div class="message error" id="nudge-error"></div>
+      </div>
+
       <!-- Seed Data Section -->
       <div class="section">
         <h2>Seed Writing Styles</h2>
@@ -363,6 +422,153 @@ Perfect, perfect! This looks perfect. Absolutely perfect work.`,
         document.getElementById("user-id").value = personaId;
         document.getElementById("gen-user-id").value = personaId;
         document.getElementById("samples").value = PERSONAS[personaId] || "";
+      }
+
+      function selectEmployee(employeeId) {
+        document.getElementById("employee-id").value = employeeId;
+      }
+
+      async function fetchNudges() {
+        const employeeId = document.getElementById("employee-id").value.trim();
+
+        if (!employeeId) {
+          showMessage("nudge-error", "Please enter an employee ID");
+          return;
+        }
+
+        showLoading("nudge-loading");
+        hideResult("nudge-result");
+        hideResult("summary-result");
+        hideResult("email-result");
+        hideMessage("nudge-error");
+
+        try {
+          const response = await fetch(`${API_BASE}/fetch-nudge-data`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: "manager",
+              prompt: "",
+              email: "",
+              password: "",
+              employee_id: employeeId,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.detail || `HTTP error! status: ${response.status}`
+            );
+          }
+
+          const data = await response.json();
+          let output = "";
+          
+          if (data.data && data.data.length > 0) {
+            data.data.forEach((nudge, index) => {
+              output += `${index + 1}. ${nudge.config.message}\n`;
+              output += `   Type: ${nudge.nudge_type}\n`;
+              output += `   Metric: ${nudge.config.metric} = ${nudge.metric_value} (threshold: ${nudge.config.threshold})\n`;
+              output += `   Instructions: ${nudge.config.metaData}\n\n`;
+            });
+          } else {
+            output = "No active nudges found for this employee.";
+          }
+
+          document.getElementById("nudge-output").textContent = output;
+          showResult("nudge-result");
+          hideLoading("nudge-loading");
+        } catch (error) {
+          hideLoading("nudge-loading");
+          showMessage("nudge-error", `Error: ${error.message}`);
+        }
+      }
+
+      async function generateNudgeSummary() {
+        const employeeId = document.getElementById("employee-id").value.trim();
+
+        if (!employeeId) {
+          showMessage("nudge-error", "Please enter an employee ID");
+          return;
+        }
+
+        showLoading("nudge-loading");
+        hideResult("summary-result");
+        hideMessage("nudge-error");
+
+        try {
+          const response = await fetch(`${API_BASE}/nudge-summary`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: "manager",
+              prompt: "Create a professional performance summary",
+              email: "",
+              password: "",
+              employee_id: employeeId,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.detail || `HTTP error! status: ${response.status}`
+            );
+          }
+
+          const data = await response.json();
+          document.getElementById("summary-output").textContent = data.summary;
+          showResult("summary-result");
+          hideLoading("nudge-loading");
+        } catch (error) {
+          hideLoading("nudge-loading");
+          showMessage("nudge-error", `Error: ${error.message}`);
+        }
+      }
+
+      async function generateNudgeEmail() {
+        const employeeId = document.getElementById("employee-id").value.trim();
+
+        if (!employeeId) {
+          showMessage("nudge-error", "Please enter an employee ID");
+          return;
+        }
+
+        showLoading("nudge-loading");
+        hideResult("email-result");
+        hideMessage("nudge-error");
+
+        try {
+          const response = await fetch(`${API_BASE}/nudge-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: "manager",
+              prompt: "Write a supportive and constructive email",
+              email: "",
+              password: "",
+              employee_id: employeeId,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.detail || `HTTP error! status: ${response.status}`
+            );
+          }
+
+          const data = await response.json();
+          document.getElementById(
+            "email-output"
+          ).textContent = `Subject: ${data.subject}\n\n${data.body}`;
+          showResult("email-result");
+          hideLoading("nudge-loading");
+        } catch (error) {
+          hideLoading("nudge-loading");
+          showMessage("nudge-error", `Error: ${error.message}`);
+        }
       }
 
       async function loadDemoData() {
